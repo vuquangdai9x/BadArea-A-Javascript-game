@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Run And Punch v1</title>
+	<script type="text/javascript" src="jquery-3.3.1.min.js"></script>
+	<style type="text/css">
+		/*Color Pallete
+		#D2AA91
+		#4C9C8C
+		#3B3457
+		#6F6A87
+		#693D62*/
+
+		body{
+			padding: 0;
+			margin: 0;
+		}
+		#GameArea{
+			height: 100vh;
+			width: 90%;
+			border: 10px solid #3B3457;
+			float: left;
+			box-sizing: border-box;
+			background-color: #6F6A87;
+		}
+		#GameInfo{
+			height: 100vh;
+			width: 10%;
+			border: none;
+			box-sizing: border-box;
+			float: left;
+			background-color: #693D62;
+		}
+
+
+	</style>
+</head>
+<body>
+	<div id="GameArea">
+		
+	</div>
+	<div id="GameInfo">
+		
+	</div>
+
+
+	<script type="text/javascript">
+		// Cấu hình game
+		var GameArea = document.getElementById('GameArea');
+		var config = {
+			//map
+			border : 10,
+			MaxWidth : GameArea.clientWidth,
+			MaxHeight : GameArea.clientHeight,
+
+			player : {},
+			enemy : {},
+			bullet : {},
+			item : {}
+		};
+
+		console.log(config);
+
+		// Khởi tạo các mảng
+		var PlayerArray = new Array();
+		var EnemyArray = new Array();
+		// Khởi tạo các đối tượng
+
+		// Tạo Class
+		function GameObject(posXValue,posYValue,widthValue,heightValue,stepValue,dirValue,existTimeValue,lookValue){ //đối tượng cơ bản		
+
+			
+				// Khởi tạo các thuộc tính. Tất cả để public để có thể kế thừa và tiện sử dụng
+				this.posX = posXValue!=undefined?posXValue:0;
+				this.posY = posYValue!=undefined?posYValue:0;
+				this.widthVal = widthValue!=undefined?widthValue:0;
+				this.heightVal = heightValue!=undefined?heightValue:0;
+				this.step = stepValue!=undefined?stepValue:0;
+				this.direction = dirValue!=undefined?dirValue:0;
+				this.existTime = existTimeValue!=undefined?existTimeValue:0;
+				this.look = lookValue!=undefined?lookValue:'#fff';
+				this.status = true; //true: tồn tại		//false: bị hủy
+					
+
+			// Tạo thẻ HTML để hiển thị
+			
+				this.htmlElement = document.createElement('span');
+				this.htmlElement.style.position = 'absolute';
+				this.htmlElement.style.top = (this.posY+config.border)+'px';
+				this.htmlElement.style.left = (this.posX+config.border)+'px';
+				this.htmlElement.style.width = this.widthVal+'px';
+				this.htmlElement.style.height = this.heightVal+'px';
+				this.htmlElement.style.background = this.look;
+				GameArea.appendChild(this.htmlElement);
+							
+
+			//Các hàm set, thay đổi thuộc tính, đồng thời vẽ lại đối tượng trên giao diện
+			this.setPosX = function(value){
+				this.posX=value;
+				this.htmlElement.style.left = (value+config.border)+'px';
+			}
+
+			this.setPosY = function(value){
+				this.posY=value;
+				this.htmlElement.style.top = (value+config.border)+'px';
+			}
+
+			this.setWidth = function(value){
+				this.widthVal=value;
+				this.htmlElement.style.width = value+'px';
+			}
+
+			this.setHeight = function(value){
+				this.heightVal=value;
+				this.htmlElement.style.height = value+'px';
+			}
+
+			this.setLook = function(value){
+				this.look=value;
+				this.htmlElement.style.background = value;				
+			}
+
+			this.die = function(){
+				this.status = false;
+				GameArea.removeChild(this.htmlElement);
+			}
+
+			// di chuyển
+			this.move = function(){
+				// console.log(this.direction);
+				switch (this.direction) {
+					case 1: //up ^
+						var newPosY=this.posY-this.step;
+						if (newPosY<0) newPosY=0;
+						this.setPosY(newPosY);			
+						break;
+					case 2: //left <
+						var newPosX=this.posX-this.step;
+						if (newPosX<0) newPosX=0;
+						this.setPosX(newPosX);
+						break;
+					case 3: //down v
+						var newPosY=this.posY+this.step;
+						var realMax=config.MaxHeight-this.heightVal;
+						if (newPosY>realMax) newPosY=realMax;
+						this.setPosY(newPosY);
+						break;
+					case 4: //right >
+						var newPosX=this.posX+this.step;
+						var realMax=config.MaxWidth-this.widthVal;
+						if (newPosX>realMax) newPosX=realMax;
+						this.setPosX(newPosX);
+						break;	
+					default:
+						// statements_def
+						break;
+				}
+			}
+
+		}
+
+PlayerObject.prototype = new GameObject();
+PlayerObject.prototype.constructor=PlayerObject;
+
+		function PlayerObject(HPValue,ATKValue,DEFValue){ //đối tượng người chơi có thể điều khiển
+			
+
+			this.HP = HPValue!=undefined?HPValue:1;
+			this.ATK = ATKValue!=undefined?ATKValue:1;
+			this.DEF = DEFValue!=undefined?DEFValue:1;
+			this.SHIELD = false;
+
+
+			// this.widthVal = 10;
+			// this.heightVal = 20;
+
+
+
+			this.setHP = function(value){
+				this.HP=value;
+				if (value<=0) {
+					this.die();
+				}
+			}
+		}
+
+		
+		
+
+		var testObj=new GameObject(300,200,32,32,10,null,3000,'red');
+		var testPlayer=new PlayerObject();
+		console.log(testPlayer);
+		
+		// 1 turn
+		var turnInterval = setInterval(function(){
+			// Xử lý tương tác
+			
+			// Xử lý di chuyển			
+			testObj.move();
+
+			// Xử lý Item xuất hiện
+
+		},20) // 20 tương đương 50FPS
+
+		// Sự kiện khi gõ phím
+		window.addEventListener('keypress', function(event){
+			//console.log(event.charCode);	
+			
+			switch (event.charCode) {
+				case 119: 	//w
+				case 87: 	//W
+				case 38: 	//arrow up
+					testObj.direction = 1;
+					break;
+				case 97: 	//a
+				case 65: 	//A
+				case 37: 	//left arrow
+					testObj.direction = 2;
+					break;
+				case 115: 	//s
+				case 83: 	//S
+				case 40: 	//arrow down
+					testObj.direction = 3;
+					break;
+				case 100: 	//d
+				case 68: 	//D
+				case 39: 	//arrow right
+					testObj.direction = 4;
+					break;
+				case 32: 	//space   dừng
+					testObj.direction = 0;
+					break;	
+				case 102: 	//f
+				case 70: 	//F
+					
+					break;
+				case 112: 	//p
+				case 80: 	//P
+					clearInterval(turnInterval);
+					break;
+				default:
+					// statements_def
+					break;
+			}			
+		});
+
+		// Danh sách effect khi ăn item
+
+		// Danh sách hiệu ứng
+	</script>
+</body>
+</html>
