@@ -31,6 +31,7 @@
 			float: left;
 			background-color: #693D62;
 		}
+		
 
 
 	</style>
@@ -40,11 +41,15 @@
 		
 	</div>
 	<div id="GameInfo">
-		
+		<div>
+			<span>HP : </span>
+			<span id="HP-value"></span>
+		</div>
 	</div>
 
 
 	<script type="text/javascript">
+		"use strict";
 		// Cấu hình game
 		var GameArea = document.getElementById('GameArea');
 		var config = {
@@ -67,74 +72,61 @@
 		// Khởi tạo các đối tượng
 
 		// Tạo Class
-		function GameObject(){ //đối tượng cơ bản	
-			
-			// Danh sách thuộc tính. Tất cả để public để có thể kế thừa và tiện sử dụng
-			// this.posX;
-			// this.posY;
-			// this.widthVal;
-			// this.heightVal;
-			// this.step;
-			// this.direction;
-			// this.existTime;
-			// this.look;
-			// this.status = true; //true: tồn tại		//false: bị hủy			
+		class GameObject{
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff'){
+				this.posX = posXValue;
+				this.posY = posYValue;
+				this.widthVal = widthValue;
+				this.heightVal = heightValue;
+				this.step = stepValue;
+				this.direction = dirValue;
+				this.existTime = existTimeValue;
+				this.look = lookValue;
+				this.status = true; //true: tồn tại		//false: bị hủy				
 
-			this.posX = posXValue!=undefined?posXValue:0;
-			this.posY = posYValue!=undefined?posYValue:0;
-			this.widthVal = widthValue!=undefined?widthValue:0;
-			this.heightVal = heightValue!=undefined?heightValue:0;
-			this.step = stepValue!=undefined?stepValue:0;
-			this.direction = dirValue!=undefined?dirValue:0;
-			this.existTime = existTimeValue!=undefined?existTimeValue:0;
-			this.look = lookValue!=undefined?lookValue:'#fff';
-			this.status = true; //true: tồn tại		//false: bị hủy			
-					
-			// Tạo thẻ HTML để hiển thị
-			this.createChar = function(){
 				this.htmlElement = document.createElement('span');
 				this.htmlElement.style.position = 'absolute';
+				this.htmlElement.style.boxSizing = 'border-box';
+
 				this.htmlElement.style.top = (this.posY+config.border)+'px';
 				this.htmlElement.style.left = (this.posX+config.border)+'px';
 				this.htmlElement.style.width = this.widthVal+'px';
 				this.htmlElement.style.height = this.heightVal+'px';
 				this.htmlElement.style.background = this.look;
 				GameArea.appendChild(this.htmlElement);
-			}			
 
-			//Các hàm set, thay đổi thuộc tính, đồng thời vẽ lại đối tượng trên giao diện
-			this.setPosX = function(value){
+				if (this.existTime>0) { //Đặt thời gian biến mất, nếu tồn tại existTime
+					let _self=this;
+					setTimeout(function(){_self.die();}, _self.existTime);
+				}
+			}
+
+			setPosX(value){
 				this.posX=value;
 				this.htmlElement.style.left = (value+config.border)+'px';
 			}
-
-			this.setPosY = function(value){
+			setPosY(value){
 				this.posY=value;
 				this.htmlElement.style.top = (value+config.border)+'px';
 			}
-
-			this.setWidth = function(value){
+			setWidth(value){
 				this.widthVal=value;
 				this.htmlElement.style.width = value+'px';
 			}
-
-			this.setHeight = function(value){
+			setHeight(value){
 				this.heightVal=value;
 				this.htmlElement.style.height = value+'px';
 			}
-
-			this.setLook = function(value){
+			setLook(value){
 				this.look=value;
 				this.htmlElement.style.background = value;				
 			}
-
-			this.die = function(){
+			die(){
 				this.status = false;
 				GameArea.removeChild(this.htmlElement);
 			}
 
-			// di chuyển
-			this.move = function(){
+			move(){
 				// console.log(this.direction);
 				switch (this.direction) {
 					case 1: //up ^
@@ -165,84 +157,108 @@
 				}
 			}
 
-			return this;
+		};
 
-		}
+		class PlayerObject extends GameObject{
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHILEDValue=false){
+				super(posXValue, posYValue, widthValue, heightValue, stepValue, dirValue, existTimeValue, lookValue);
+				this.HP = HPValue;
+				this.ATK = ATKValue;
+				this.DEF = DEFValue;
+				this.SHIELD = SHILEDValue;
 
-		PlayerObject.prototype = new GameObject();
+				this.setSHIELD(SHILEDValue);
+			}
 
-		function PlayerObject(posXValue,posYValue,widthValue,heightValue,stepValue,dirValue,existTimeValue,lookValue,HPValue,ATKValue,DEFValue){ //đối tượng người chơi có thể điều khiển
-
-			
-
-			this.HP = HPValue!=undefined?HPValue:1;
-			this.ATK = ATKValue!=undefined?ATKValue:1;
-			this.DEF = DEFValue!=undefined?DEFValue:1;
-			this.SHIELD = false;
-
-			// this.widthVal = 10;
-			// this.heightVal = 20;
-
-			this.setHP = function(value){
+			setHP(value){
 				this.HP=value;
+				//document.getElementById('HP-value').innerHTML=value;
 				if (value<=0) {
 					this.die();
 				}
 			}
 
-
-			this.createChar();
-			return this;
+			setSHIELD(value){
+				this.SHIELD=value;
+				if (value==true) {
+					//this.htmlElement.style.boxShadow = '0 0 10px white';
+					this.htmlElement.style.border = '10px solid white';
+				}else{
+					//this.htmlElement.style.boxShadow = 'none';
+					this.htmlElement.style.border = 'none';
+				}
+			}
 		}
-
-
 		
-		var testPlayer=new PlayerObject(300,200,32,32);
-		console.log(testPlayer);
+		
+		PlayerArray.push(new PlayerObject(300,200,30,30,5,null,2000,'red',20,1,1,true));
+		PlayerArray.push(new PlayerObject(0,0,20,20,10,null,6000,'blue',10,1,1,false));
+		console.log(PlayerArray);
 		
 		// 1 turn
 		var turnInterval = setInterval(function(){
 			// Xử lý tương tác
 
-			// Xử lý di chuyển			
-			testPlayer.move();
+			// Xử lý di chuyển		
+			for(let i in PlayerArray){
+				PlayerArray[i].move();
+			}	
 
 			// Xử lý Item xuất hiện
 
+			// Xử lý các vấn đề khác
+			for (let i in PlayerArray){
+				if (!PlayerArray[i].status) {//không còn tồn tại, xóa luôn
+					PlayerArray.splice(i, 1);
+				}
+			}
 		},20) // 20 tương đương 50FPS
 
 		// Sự kiện khi gõ phím
 		window.addEventListener('keypress', function(event){
 			//console.log(event.charCode);	
-
-			
+			//console.log(testPlayer.direction);			
 			switch (event.charCode) {
 				case 119: 	//w
 				case 87: 	//W
 				case 38: 	//arrow up
-					testPlayer.direction = 1;
+					for(let i in PlayerArray){
+						PlayerArray[i].direction = 1;
+					}	
 					break;
 				case 97: 	//a
 				case 65: 	//A
 				case 37: 	//left arrow
-					testPlayer.direction = 2;
+					for(let i in PlayerArray){
+						PlayerArray[i].direction = 2;
+					}
 					break;
 				case 115: 	//s
 				case 83: 	//S
 				case 40: 	//arrow down
-					testPlayer.direction = 3;
+					for(let i in PlayerArray){
+						PlayerArray[i].direction = 3;
+					}
 					break;
 				case 100: 	//d
 				case 68: 	//D
 				case 39: 	//arrow right
-					testPlayer.direction = 4;
+					for(let i in PlayerArray){
+						PlayerArray[i].direction = 4;
+					}
 					break;
 				case 32: 	//space   dừng
-					testPlayer.direction = 0;
+					for(let i in PlayerArray){
+						PlayerArray[i].direction = 5;
+					}
 					break;	
 				case 102: 	//f
-				case 70: 	//F
-					
+				case 70: 	//F					
+					for(let i in PlayerArray){
+						var playerObj=PlayerArray[i];
+						playerObj.setSHIELD(!playerObj.SHIELD);
+						playerObj.setHP(playerObj.HP-1);
+					}
 					break;
 				case 112: 	//p
 				case 80: 	//P
