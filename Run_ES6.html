@@ -14,6 +14,7 @@
 		body{
 			padding: 0;
 			margin: 0;
+			font-family: Arial;
 		}
 		#GameArea{
 			height: 100vh;
@@ -30,9 +31,30 @@
 			box-sizing: border-box;
 			float: left;
 			background-color: #693D62;
+			padding: 1em;
+			font-size: 1.2em;
 		}
-		
-
+		#HP-value{
+			font-weight: bold;
+			color: red;
+		}
+		#Score-value{
+			font-weight: bold;
+			color: yellow;
+		}
+		#GameOverMess{
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100vw;
+			height: 100vh;
+			background-color: rgba(0,0,0,0.5);
+			text-align: center;
+			padding-top: 30vh;
+			font-size: 3em;
+			line-height: 2em;
+			color: white;
+		}
 
 	</style>
 </head>
@@ -44,6 +66,10 @@
 		<div>
 			<span>HP : </span>
 			<span id="HP-value"></span>
+		</div>
+		<div>
+			<span>Score : </span>
+			<span id="Score-value">0</span>
 		</div>
 	</div>
 
@@ -63,16 +89,18 @@
 			bullet : {},
 			item : {}
 		};
+		var TotalScore=0;
 
 		console.log(config);
 
 		// Khởi tạo các mảng
 		var PlayerArray = new Array();
 		var EnemyArray = new Array();
+
 		// Khởi tạo các đối tượng
 
 		// Tạo Class
-		class GameObject{
+		class GameInstance{ 	//Đối tượng cơ bản
 			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff'){
 				this.posX = posXValue;
 				this.posY = posYValue;
@@ -121,9 +149,10 @@
 				this.look=value;
 				this.htmlElement.style.background = value;				
 			}
+
 			die(){
+				console.log(this);
 				this.status = false;
-				GameArea.removeChild(this.htmlElement);
 			}
 
 			move(){
@@ -156,23 +185,21 @@
 						break;
 				}
 			}
-
 		};
 
-		class PlayerObject extends GameObject{
-			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHILEDValue=false){
+		class Character extends GameInstance{ 
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHIELDValue=false){
 				super(posXValue, posYValue, widthValue, heightValue, stepValue, dirValue, existTimeValue, lookValue);
-				this.HP = HPValue;
+				//this.HP = HPValue;
 				this.ATK = ATKValue;
 				this.DEF = DEFValue;
-				this.SHIELD = SHILEDValue;
-
-				this.setSHIELD(SHILEDValue);
+				this.SHIELD = SHIELDValue;
+				this.setSHIELD(SHIELDValue);
+				this.setHP(HPValue);
 			}
 
 			setHP(value){
 				this.HP=value;
-				//document.getElementById('HP-value').innerHTML=value;
 				if (value<=0) {
 					this.die();
 				}
@@ -188,81 +215,215 @@
 					this.htmlElement.style.border = 'none';
 				}
 			}
+
+			// Effect
+			beAttacked(opp_ATK,opp_force=true){				
+				this.setHP(this.HP-opp_ATK);
+				this.htmlElement.style.opacity = '0.5';
+				let _self=this;
+				setTimeout(function(){_self.htmlElement.style.opacity='1';}, 30);
+
+				if (opp_force) {
+					let oldDirection = this.direction;
+					let oldStep = this.step;
+					//this.direction = 
+				}
+			}
+		}
+
+		class Player extends Character{
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHIELDValue=false){
+				super(posXValue, posYValue, widthValue, heightValue, stepValue, dirValue, existTimeValue, lookValue, HPValue, ATKValue, DEFValue, SHIELDValue);
+			}
+
+			setHP(value){
+				super.setHP(value);		
+				document.getElementById('HP-value').innerHTML=value;
+			}
+		}
+
+		class Enemy extends Character{
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHIELDValue=false){
+				super(posXValue, posYValue, widthValue, heightValue, stepValue, dirValue, existTimeValue, lookValue, HPValue, ATKValue, DEFValue, SHIELDValue);
+			}
 		}
 		
 		
-		PlayerArray.push(new PlayerObject(300,200,30,30,5,null,2000,'red',20,1,1,true));
-		PlayerArray.push(new PlayerObject(0,0,20,20,10,null,6000,'blue',10,1,1,false));
-		console.log(PlayerArray);
+		//PlayerArray.push(new Player(300,200,15,15,5,null,0,'white',20,1,1,false));
+		PlayerArray.push(new Player(100,200,15,15,10,null,0,'white',20,1,1,false));
+		//PlayerArray.push(new Player(100,500,15,15,10,null,0,'white',20,1,1,false));
+		for(let i = 0; i < 5; i++){
+			let tmp_step=i+3;
+			EnemyArray.push(new Enemy(0,0,20,20,tmp_step,null,0,'red',10,1,1,false));
+			EnemyArray.push(new Enemy(config.MaxWidth-20,0,20,20,tmp_step,null,0,'red',10,1,1,false));
+			EnemyArray.push(new Enemy(0,config.MaxHeight-20,20,20,tmp_step,null,0,'red',10,1,1,false));
+			EnemyArray.push(new Enemy(config.MaxWidth-20,config.MaxHeight-20,20,20,tmp_step,null,0,'red',10,1,1,false));
+		}		
+		//EnemyArray.push(new Enemy(0,0,20,20,3,null,0,'red',10,1,1,false));
 		
-		// 1 turn
+		var TurnCount=0;
+		// 1 turn. Vòng lặp 20/1000 giây sẽ chạy 1 lần
 		var turnInterval = setInterval(function(){
 			// Xử lý tương tác
+			let CountPlayer=PlayerArray.length;
+			let CountEnemy=EnemyArray.length;
 
-			// Xử lý di chuyển		
-			for(let i in PlayerArray){
-				PlayerArray[i].move();
-			}	
+			// console.log(CountPlayer);
+			// console.log(CountEnemy);
+			
+			// Xét va chạm giữa các đối tượng người chơi. 
+				//Quân mình đâm vào nhau cũng chết
 
-			// Xử lý Item xuất hiện
+			// if (CountPlayer>1) { 	//Nếu có nhiều hơn 1 đối tượng người chơi thì mới xét
+			// 	for(let i = 0; i < CountPlayer-1; i++){
+			// 		for(let j = i+1; j < CountPlayer; j++){
+			// 			// code
+			// 		}
+			// 	}
+			// }
 
-			// Xử lý các vấn đề khác
-			for (let i in PlayerArray){
-				if (!PlayerArray[i].status) {//không còn tồn tại, xóa luôn
-					PlayerArray.splice(i, 1);
+			// Xét va chạm giữa các Enemy
+				// Quân địch đâm nhau cũng bị chết
+
+			// if (CountEnemy>1) { 	//Nếu có nhiều hơn 1 đối tượng thì mới xét
+			// 	for(let i = 0; i < CountEnemy-1; i++){
+			// 		for(let j = i+1; j < CountEnemy; j++){
+			// 			// code
+			// 		}
+			// 	}
+			// }
+
+			//Xét va chạm giữa Player và Enemy
+			for(let i = 0; i < CountPlayer; i++){
+				for(let j = 0; j < CountEnemy; j++){
+					let player = PlayerArray[i];
+					let enemy = EnemyArray[j];
+					if (checkCollision(player,enemy)) {
+						player.setHP(player.HP-enemy.ATK);
+						enemy.setHP(enemy.HP-player.ATK);
+					}
 				}
 			}
+				
+			//----------------------------------
+			// Xử lý di chuyển		
+			for(let i = 0; i < CountPlayer; i++){
+				PlayerArray[i].move();
+			}	
+			for(let i = 0; i < CountEnemy; i++){
+				EnemyArray[i].move();
+			}
+
+			//----------------------------------
+			// Xử lý Item xuất hiện
+
+			//----------------------------------
+			// Xử lý các vấn đề khác
+			for(let i in PlayerArray){
+				let player=PlayerArray[i]
+				if (!(player.status)) {//không còn tồn tại, xóa luôn
+					GameArea.removeChild(player.htmlElement);
+					PlayerArray.splice(i, 1);					
+				}
+			}
+
+			if (PlayerArray.length==0) {
+				GameOver();
+			}
+
+			for (let i in EnemyArray){
+				let enemy=EnemyArray[i];
+				//console.log(EnemyArray[i]);
+				if (!(enemy.status)) {//không còn tồn tại, xóa luôn	
+					GameArea.removeChild(enemy.htmlElement);
+					EnemyArray.splice(i, 1);
+				}
+			}
+
+			//Biến đếm
+			if (TurnCount%10==0){
+				TotalScore++;
+				document.getElementById('Score-value').innerHTML=TotalScore;
+
+				CountEnemy=EnemyArray.length;
+				for (let i = 0; i < CountEnemy; i++){
+					EnemyArray[i].direction = Math.floor(Math.random()*4)+1;
+				}
+
+				if (TotalScore%20==0) {
+					for (let i = 0; i < CountEnemy; i++){
+						EnemyArray[i].step++;
+					}
+				}
+			}
+
+			
+
+			if (TurnCount==50) TurnCount=0;
+			TurnCount++;
 		},20) // 20 tương đương 50FPS
 
 		// Sự kiện khi gõ phím
 		window.addEventListener('keypress', function(event){
 			//console.log(event.charCode);	
-			//console.log(testPlayer.direction);			
+			//console.log(testPlayer.direction);		
+			let CountPlayer=PlayerArray.length;
 			switch (event.charCode) {
 				case 119: 	//w
 				case 87: 	//W
 				case 38: 	//arrow up
-					for(let i in PlayerArray){
+					for(let i = 0; i < CountPlayer; i++){
 						PlayerArray[i].direction = 1;
 					}	
 					break;
 				case 97: 	//a
 				case 65: 	//A
 				case 37: 	//left arrow
-					for(let i in PlayerArray){
+					for(let i = 0; i < CountPlayer; i++){
 						PlayerArray[i].direction = 2;
 					}
 					break;
 				case 115: 	//s
 				case 83: 	//S
 				case 40: 	//arrow down
-					for(let i in PlayerArray){
+					for(let i = 0; i < CountPlayer; i++){
 						PlayerArray[i].direction = 3;
 					}
 					break;
 				case 100: 	//d
 				case 68: 	//D
 				case 39: 	//arrow right
-					for(let i in PlayerArray){
+					for(let i = 0; i < CountPlayer; i++){
 						PlayerArray[i].direction = 4;
 					}
 					break;
 				case 32: 	//space   dừng
-					for(let i in PlayerArray){
+					for(let i = 0; i < CountPlayer; i++){
 						PlayerArray[i].direction = 5;
 					}
 					break;	
 				case 102: 	//f
 				case 70: 	//F					
-					for(let i in PlayerArray){
-						var playerObj=PlayerArray[i];
-						playerObj.setSHIELD(!playerObj.SHIELD);
-						playerObj.setHP(playerObj.HP-1);
-					}
+					// for(let i in PlayerArray){
+					// 	let playerObj=PlayerArray[i];
+					// 	playerObj.setSHIELD(!playerObj.SHIELD);
+					// 	playerObj.setHP(playerObj.HP-1);
+					// }
+					console.log(PlayerArray);
+					console.log(EnemyArray);
+					break;
+				case 81: 	//Q
+				case 113: 	//q
+					for(let i = 0; i < CountPlayer; i++){
+						let playerObj=PlayerArray[i];
+						// var originStep=playerObj.step;
+						playerObj.step*=2;
+						setTimeout(function(){playerObj.step/=2;}, 500);
+					}					
 					break;
 				case 112: 	//p
 				case 80: 	//P
-					clearInterval(turnInterval);
+					GameOver();
 					break;
 				default:
 					// statements_def
@@ -273,6 +434,31 @@
 		// Danh sách effect khi ăn item
 
 		// Danh sách hiệu ứng
+
+		// Các hàm khác
+		function checkCollision(obj1,obj2){ //Hàm kiểm tra 2 GameInstance có va chạm nhau ?
+			if ( (obj1.posX>(obj2.posX+obj2.widthVal)) || ((obj1.posX+obj1.widthVal)<obj2.posX) || (obj1.posY>(obj2.posY+obj2.heightVal)) || ((obj1.posY+obj1.heightVal)<obj2.posY) ){
+				return false;
+			}
+			else{
+				return true;
+			}
+		}
+
+		function GameOver(){
+			clearInterval(turnInterval);
+			var messGameOver=document.createElement('div');
+			messGameOver.setAttribute("id","GameOverMess");
+			document.getElementsByTagName('body')[0].appendChild(messGameOver);
+			messGameOver.innerHTML="Game Over<br>Score : <b>"+TotalScore+"</b>";
+			// messGameOver.style.position = 'absolute';
+			// messGameOver.style.width = '100%';
+			// messGameOver.style.height = '100%';
+			// messGameOver.style.background = 'rgba(0,0,0,0.5)';
+			// messGameOver.style.bak
+
+
+		}
 	</script>
 </body>
 </html>
