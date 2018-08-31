@@ -79,13 +79,40 @@
 		// Cấu hình game
 		var GameArea = document.getElementById('GameArea');
 		var config = {
+			//turn
+			turnToScore : 20,
+			scoreToBoostEnemy : 20,
+
 			//map
 			border : 10,
 			MaxWidth : GameArea.clientWidth,
 			MaxHeight : GameArea.clientHeight,
 
-			player : {},
-			enemy : {},
+			//player
+			player : {
+				HP : 20,
+				ATK : 3,
+				DEF : 1,
+				Shield : false
+			},
+
+			//enemy
+			enemy : {
+				type0 : {
+					HP : 20,
+					ATK : 3,
+					DEF : 1,
+					Shield : false
+				},
+				type1 : {
+					HP : 20,
+					ATK : 3,
+					DEF : 1,
+					Shield : false
+				}
+			},
+
+
 			bullet : {},
 			item : {}
 		};
@@ -242,15 +269,35 @@
 			}
 		}
 
+		// Danh sách các loại enemy
 		class Enemy extends Character{
-			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHIELDValue=false){
+			constructor(posXValue=0, posYValue=0, widthValue=0, heightValue=0, stepValue=0, dirValue=0, existTimeValue=0, lookValue='#fff',HPValue=1,ATKValue=1,DEFValue=1,SHIELDValue=false,typeEnemyValue=0){
 				super(posXValue, posYValue, widthValue, heightValue, stepValue, dirValue, existTimeValue, lookValue, HPValue, ATKValue, DEFValue, SHIELDValue);
+				this.typeEnemy=typeEnemyValue;
+			}
+			huntPlayer(player){
+				let xP=player.posX+player.widthVal/2;
+				let yP=player.posY+player.heightVal/2;
+
+				let xE=this.posX+this.widthVal/2;
+				let yE=this.posY+this.heightVal/2;
+
+				let dX=Math.abs(xE-xP);
+				let dY=Math.abs(yE-yP);
+
+				if (dY>=dX) {
+					if (yE>=yP) return 1;
+					if (yE<yP) return 3;
+				}else{
+					if (xE>=xP) return 2;
+					if (xE<xP) return 4;
+				}
 			}
 		}
 		
 		
 		//PlayerArray.push(new Player(300,200,15,15,5,null,0,'white',20,1,1,false));
-		PlayerArray.push(new Player(100,200,15,15,10,null,0,'white',20,1,1,false));
+		PlayerArray.push(new Player(500,500,15,15,10,null,0,'white',20,5,1,false));
 		//PlayerArray.push(new Player(100,500,15,15,10,null,0,'white',20,1,1,false));
 		for(let i = 0; i < 5; i++){
 			let tmp_step=i+3;
@@ -259,7 +306,8 @@
 			EnemyArray.push(new Enemy(0,config.MaxHeight-20,20,20,tmp_step,null,0,'red',10,1,1,false));
 			EnemyArray.push(new Enemy(config.MaxWidth-20,config.MaxHeight-20,20,20,tmp_step,null,0,'red',10,1,1,false));
 		}		
-		//EnemyArray.push(new Enemy(0,0,20,20,3,null,0,'red',10,1,1,false));
+		EnemyArray.push(new Enemy(300,300,20,20,5,null,0,'pink',10,1,1,false,1));
+		EnemyArray.push(new Enemy(100,100,20,20,5,null,0,'pink',10,1,1,false,1));
 		
 		var TurnCount=0;
 		// 1 turn. Vòng lặp 20/1000 giây sẽ chạy 1 lần
@@ -311,7 +359,14 @@
 				PlayerArray[i].move();
 			}	
 			for(let i = 0; i < CountEnemy; i++){
-				EnemyArray[i].move();
+				let obj=EnemyArray[i];
+				if (obj.typeEnemy==1) {
+					obj.direction=obj.huntPlayer(PlayerArray[0]);
+				}else{
+					if (TurnCount%10==0) 
+						obj.direction = Math.floor(Math.random()*4)+1;
+				}
+				obj.move();
 			}
 
 			//----------------------------------
@@ -319,6 +374,8 @@
 
 			//----------------------------------
 			// Xử lý các vấn đề khác
+
+			// Xóa đối tượng đã chết
 			for(let i in PlayerArray){
 				let player=PlayerArray[i]
 				if (!(player.status)) {//không còn tồn tại, xóa luôn
@@ -341,25 +398,21 @@
 			}
 
 			//Biến đếm
-			if (TurnCount%10==0){
+			if (TurnCount%config.turnToScore==0){
+				// Sau vài turn tăng 1 điểm
 				TotalScore++;
 				document.getElementById('Score-value').innerHTML=TotalScore;
 
+				// Cứ sau 1 lượng điểm, tăng tốc độ của Enemy lên 1px
 				CountEnemy=EnemyArray.length;
-				for (let i = 0; i < CountEnemy; i++){
-					EnemyArray[i].direction = Math.floor(Math.random()*4)+1;
-				}
-
-				if (TotalScore%20==0) {
+				if (TotalScore%config.scoreToBoostEnemy==0) {
 					for (let i = 0; i < CountEnemy; i++){
 						EnemyArray[i].step++;
 					}
 				}
 			}
 
-			
-
-			if (TurnCount==50) TurnCount=0;
+			if (TurnCount==1000) TurnCount=0;
 			TurnCount++;
 		},20) // 20 tương đương 50FPS
 
@@ -451,12 +504,9 @@
 			messGameOver.setAttribute("id","GameOverMess");
 			document.getElementsByTagName('body')[0].appendChild(messGameOver);
 			messGameOver.innerHTML="Game Over<br>Score : <b>"+TotalScore+"</b>";
-			// messGameOver.style.position = 'absolute';
-			// messGameOver.style.width = '100%';
-			// messGameOver.style.height = '100%';
-			// messGameOver.style.background = 'rgba(0,0,0,0.5)';
-			// messGameOver.style.bak
+		}
 
+		function calculateHP(player,enemy){
 
 		}
 	</script>
